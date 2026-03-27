@@ -28,11 +28,25 @@ jobs:
       - name: Compilar
         run: cmake --build build --config Release
 
+      - name: Verificar executável
+        run: |
+          if (!(Test-Path "build/ScanForgeCC.exe")) { throw "Executável não encontrado" }
+          Write-Host "Build OK — ScanForgeCC.exe gerado com sucesso"
+
       - name: Empacotar com windeployqt
         run: |
           mkdir dist
           cp build/ScanForgeCC.exe dist/
           windeployqt --no-translations --no-opengl-sw --no-system-d3d-compiler dist/ScanForgeCC.exe
+
+      - name: Verificar pacote
+        run: |
+          $files = Get-ChildItem dist/ -Recurse
+          Write-Host "Arquivos no pacote:"
+          $files | ForEach-Object { Write-Host "  $_" }
+          $dlls = $files | Where-Object { $_.Extension -eq ".dll" }
+          if ($dlls.Count -eq 0) { throw "Nenhuma DLL encontrada — windeployqt falhou" }
+          Write-Host "Pacote OK — $($dlls.Count) DLLs incluídas"
 
       - name: Upload do artefato
         uses: actions/upload-artifact@v4

@@ -7,6 +7,9 @@
     #include <windows.h>
     #include <tlhelp32.h>
     #include <psapi.h>
+    #include <locale>
+    #include <codecvt>
+
 #else
     #include <dirent.h>
     #include <fstream>
@@ -31,7 +34,15 @@ ProcessList ProcessService::fetch()
         do {
             ProcessEntry proc;
             proc.pid = entry.th32ProcessID;
-            proc.name = entry.szExeFile;
+            // MinGW usa Unicode — converter wchar_t para std::string
+            {
+                int len = WideCharToMultiByte(CP_UTF8, 0, entry.szExeFile, -1, nullptr, 0, nullptr, nullptr);
+                if (len > 0) {
+                    std::string buf(len - 1, '\0');
+                    WideCharToMultiByte(CP_UTF8, 0, entry.szExeFile, -1, buf.data(), len, nullptr, nullptr);
+                    proc.name = std::move(buf);
+                }
+            }
 
             // Tenta obter uso de memória do processo
             HANDLE hProc = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, proc.pid);

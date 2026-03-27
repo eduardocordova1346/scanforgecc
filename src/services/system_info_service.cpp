@@ -28,9 +28,9 @@ SystemInfo SystemInfoService::fetch()
     osvi.dwOSVersionInfoSize = sizeof(osvi);
     // RtlGetVersion retorna a versão real, sem manifestação
     using RtlGetVersionPtr = LONG(WINAPI*)(POSVERSIONINFOEXA);
-    auto RtlGetVersion = reinterpret_cast<RtlGetVersionPtr>(
-        GetProcAddress(GetModuleHandleA("ntdll.dll"), "RtlGetVersion"));
-    if (RtlGetVersion && RtlGetVersion(&osvi) == 0) {
+    auto pRtlGetVersion = reinterpret_cast<RtlGetVersionPtr>(
+        reinterpret_cast<void*>(GetProcAddress(GetModuleHandleA("ntdll.dll"), "RtlGetVersion")));
+    if (pRtlGetVersion && pRtlGetVersion(&osvi) == 0) {
         info.osVersion = std::to_string(osvi.dwMajorVersion) + "." +
                          std::to_string(osvi.dwMinorVersion) + " (Build " +
                          std::to_string(osvi.dwBuildNumber) + ")";
