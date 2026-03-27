@@ -15,9 +15,9 @@ endif()
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
-set(SOURCES
-    src/main.cpp
-    src/mainwindow.cpp
+# --- Biblioteca interna (tudo que não depende de UI) ---
+# Usada tanto pelo executável quanto pelos testes
+set(LIB_SOURCES
     src/services/system_info_service.cpp
     src/services/cpu_service.cpp
     src/services/memory_service.cpp
@@ -30,6 +30,19 @@ set(SOURCES
     src/models/temperature_info.cpp
     src/models/disk_info.cpp
     src/models/process_info.cpp
+    src/utils/formatter.cpp
+)
+
+add_library(scanforge_core STATIC ${LIB_SOURCES})
+target_include_directories(scanforge_core PUBLIC ${CMAKE_SOURCE_DIR}/include)
+if(WIN32)
+    target_link_libraries(scanforge_core PUBLIC pdh psapi)
+endif()
+
+# --- Executável principal ---
+set(APP_SOURCES
+    src/main.cpp
+    src/mainwindow.cpp
     src/widgets/info_card_widget.cpp
     src/widgets/cpu_widget.cpp
     src/widgets/memory_widget.cpp
@@ -37,23 +50,7 @@ set(SOURCES
     src/widgets/temperature_widget.cpp
     src/widgets/disk_widget.cpp
     src/widgets/process_widget.cpp
-    src/utils/formatter.cpp
-)
-
-set(HEADERS
     include/mainwindow.h
-    include/services/system_info_service.h
-    include/services/cpu_service.h
-    include/services/memory_service.h
-    include/services/temperature_service.h
-    include/services/disk_service.h
-    include/services/process_service.h
-    include/models/cpu_info.h
-    include/models/memory_info.h
-    include/models/system_info.h
-    include/models/temperature_info.h
-    include/models/disk_info.h
-    include/models/process_info.h
     include/widgets/info_card_widget.h
     include/widgets/cpu_widget.h
     include/widgets/memory_widget.h
@@ -61,43 +58,39 @@ set(HEADERS
     include/widgets/temperature_widget.h
     include/widgets/disk_widget.h
     include/widgets/process_widget.h
-    include/utils/formatter.h
 )
 
-# WIN32 flag faz o exe abrir sem janela de console no Windows
 if(WIN32)
-    add_executable(${PROJECT_NAME} WIN32 ${SOURCES} ${HEADERS})
+    add_executable(${PROJECT_NAME} WIN32 ${APP_SOURCES})
 else()
-    add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
+    add_executable(${PROJECT_NAME} ${APP_SOURCES})
 endif()
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include)
-target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Widgets)
+target_link_libraries(${PROJECT_NAME} PRIVATE scanforge_core Qt6::Widgets)
 
-# Libs específicas de plataforma
-if(WIN32)
-    target_link_libraries(${PROJECT_NAME} PRIVATE pdh psapi)
-endif()
-
-# Warnings úteis
 if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /W4)
 else()
     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
+# --- Testes ---
+option(BUILD_TESTS "Compilar testes unitários" ON)
+
+if(BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
+
 # --- Empacotamento para distribuição ---
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION .)
 
-# No Windows, windeployqt copia as DLLs do Qt automaticamente
 if(WIN32)
-    # Localiza o windeployqt que vem com o Qt
     get_target_property(QT_QMAKE Qt6::qmake IMPORTED_LOCATION)
     get_filename_component(QT_BIN_DIR "${QT_QMAKE}" DIRECTORY)
     find_program(WINDEPLOYQT windeployqt HINTS "${QT_BIN_DIR}")
 
     if(WINDEPLOYQT)
-        # Após o build, roda windeployqt para copiar DLLs necessárias
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
             COMMAND "${WINDEPLOYQT}"
                 --no-translations
