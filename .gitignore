@@ -1,0 +1,49 @@
+# Build directories
+build/
+cmake-build-*/
+out/
+
+# IDE files
+.claude
+.vscode/
+.idea/
+*.user
+*.autosave
+
+# Compiled objects
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+
+# Qt generated
+moc_*.cpp
+ui_*.h
+qrc_*.cpp
+*.qm
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+compile_commands.json
+
+# vcpkg
+vcpkg_installed/
+
+# Arquivos de agente/prompt usados na criação do projeto
+initial.md
+features.md
+tech_lead.md
+
+# Distribuição
+dist/
+
+# OS files
+.DS_Store
+Thumbs.db

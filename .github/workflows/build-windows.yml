@@ -1,0 +1,41 @@
+name: Build Windows EXE
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Instalar Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.0'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_mingw'
+          tools: 'tools_mingw1310'
+
+      - name: Configurar CMake
+        run: cmake -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${{ env.Qt6_DIR }}"
+
+      - name: Compilar
+        run: cmake --build build --config Release
+
+      - name: Empacotar com windeployqt
+        run: |
+          mkdir dist
+          cp build/ScanForgeCC.exe dist/
+          windeployqt --no-translations --no-opengl-sw --no-system-d3d-compiler dist/ScanForgeCC.exe
+
+      - name: Upload do artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScanForgeCC-Windows
+          path: dist/
