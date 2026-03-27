@@ -5,6 +5,9 @@
     #include <windows.h>
     #include <intrin.h>
     #include <array>
+    #include <cstdint>
+    #include <cstring>
+    #include <vector>
 #else
     #include <fstream>
     #include <sstream>
